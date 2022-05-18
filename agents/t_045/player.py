@@ -1,58 +1,29 @@
-from copy import deepcopy
 
+import sys
+sys.path.append('agents/t_045/')
+import json
+
+from copy import deepcopy
 from template import Agent
 from Yinsh.yinsh_model import YinshGameRule
 import random, time, heapq
 
-THINKTIME = 0.55
+THINKINGTIME = 0.95
 
 
-class PriorityQueue:
-    """
-      Implements a priority queue data structure. Each inserted item
-      has a priority associated with it and the client is usually interested
-      in quick retrieval of the lowest-priority item in the queue. This
-      data structure allows O(1) access to the lowest-priority item.
-    """
 
-    def __init__(self):
-        self.heap = []
-        self.count = 0
-
-    def push(self, item, priority):
-        entry = (priority, self.count, item)
-        heapq.heappush(self.heap, entry)
-        self.count += 1
-
-    def pop(self):
-        (_, _, item) = heapq.heappop(self.heap)
-        return item
-
-    def isEmpty(self):
-        return len(self.heap) == 0
-
-    def update(self, item, priority):
-        # If item already in priority queue with higher priority, update its priority and rebuild the heap.
-        # If item already in priority queue with equal or lower priority, do nothing.
-        # If item not in priority queue, do the same thing as self.push.
-        for index, (p, c, i) in enumerate(self.heap):
-            if i == item:
-                if p <= priority:
-                    break
-                del self.heap[index]
-                self.heap.append((priority, c, item))
-                heapq.heapify(self.heap)
-                break
-        else:
-            self.push(item, priority)
-
-
-class myAgent(Agent):
+class myAgent():
     def __init__(self, _id):
-        super().__init__(_id)
         self.id = _id
         self.game_rule = YinshGameRule(2)
-        self.count = 0
+
+        self.weight = [0, 0, 0, 0]
+        self.round = 0
+        with open("agents/t_045/weight.json", 'r', encoding='utf-8') as fw:
+            self.weight = json.load(fw)['weight']
+        print(self.weight)
+        with open("agents/t_045/heuristic_chart.json", 'r', encoding='utf-8') as fw:
+            self.hValue = json.load(fw)
 
     def GetActions(self, state):
         return self.game_rule.getLegalActions(state, self.id)
@@ -60,28 +31,116 @@ class myAgent(Agent):
     def DoAction(self, state, action):
         score = state.agents[self.id].score
         state = self.game_rule.generateSuccessor(state, action, self.id)
-        return state.agents[self.id].score > score
+        return state.agents[self.id].score - score
 
-    def GetHeuristic(self, state):
-        board = state.board
-        hValue = 999
+    def SelectAction(self, actions, currentState):
+        self.round += 1
+        start_time = time.time()
+        best_Q = -999
+        best_action = random.choice(actions)
+
+        if self.round <= 5:
+            return best_action
+
+        for action in actions:
+            Q_value = self.getQValue(deepcopy(currentState), action)
+            #print("get qValue:" + str(Q_value))
+            if Q_value > best_Q:
+                best_Q = Q_value
+                best_action = action
+
+
+        if time.time() - start_time > THINKINGTIME:
+            print(time.time() - start_time)
+            print("time out!!!")
+
+        return best_action
+
+    def getQValue(self, state, action):
+        features = self.getFeatures(state, action)
+        #print("get features: " + str(features))
+        if len(features) != len(self.weight):
+            print("features and weight not matched!")
+            return -999
+        Q_value = 0
+        for i in range(len(features)):
+            Q_value += features[i]*self.weight[i]
+        return Q_value
+
+    def getFeatures(self, state, action):
+        self_counter = 2*(self.id + 1)
+        opponent_counter = 2*(2-self.id)
+        features = []
+
+        #feature1
+        next_state = deepcopy(state)
+        score = self.DoAction(next_state, action)
+        if score > 1:
+            print("score is greater than 1: " + str(score))
+        features.append(score)
+
+        #feature2
+        current_board = "".join(map(str, next_state.board))
+        self_counter_score = current_board.count(str(self_counter))/51
+        features.append(self_counter_score)
+
+        #feature3
+        oppo_counter_score = current_board.count(str(opponent_counter))/51
+        features.append(oppo_counter_score)
+
+        #feature4
+        features.append(self.getStepScore(next_state.board)/21)
+        return features
+
+    def getStepScore(self, board):
+        self_ring = 2*(self.id+1)-1
+        max_value = 0
+        hValue = 51
         for i in range(1, 10):
             for j in range(11):
                 if j + 4 <= 10:
+                    value1 = 0
                     horizon = [board[i][j], board[i][j + 1], board[i][j + 2], board[i][j + 3], board[i][j + 4]]
-                    horizonValue = self.HeuristicValue(horizon, self.id)
-                    hValue = min(hValue, horizonValue)
+                    if horizon.count(self_ring) > 0:
+                        value1 += 10
+                    if 5 in horizon:
+                        continue
+                    else:
+                        horizonValue = self.HeuristicValue(horizon, self.id)
+
+                        horizonValue = min(hValue, horizonValue)
+                        value1 += (5 - horizonValue) * 2
+                    max_value = max(max_value, value1)
+
                 if i + 4 <= 10:
+                    value2 = 0
                     vertical = [board[i][j], board[i + 1][j], board[i + 2][j], board[i + 3][j], board[i + 4][j]]
-                    verticalValue = self.HeuristicValue(vertical, self.id)
-                    hValue = min(hValue, verticalValue)
+                    if vertical.count(self_ring) > 0:
+                        value2 += 10
+                    if 5 in vertical:
+                        continue
+                    else:
+                        verticalValue = self.HeuristicValue(vertical, self.id)
+                        verticalValue = min(hValue, verticalValue)
+                        value2 += (5 - verticalValue) * 2
+                    max_value = max(max_value, value2)
+
                 if i + 4 <= 10 and j - 4 >= 0:
+                    value3 = 0
                     slant = [board[i][j], board[i + 1][j - 1], board[i + 2][j - 2], board[i + 3][j - 3],
                              board[i + 4][j - 4]]
-                    slantValue = self.HeuristicValue(slant, self.id)
-                    hValue = min(hValue, slantValue)
+                    if slant.count(self_ring) > 0:
+                        value3 += 10
+                    if 5 in slant:
+                        continue
+                    else:
+                        slantValue = self.HeuristicValue(slant, self.id)
+                        slantValue = min(hValue, slantValue)
+                        value3 += (5 - slantValue) * 2
+                    max_value = max(max_value, value3)
 
-        return hValue
+        #print(max_value)
+        return max_value
 
     def HeuristicValue(self, list, id):
         if 5 in list:
@@ -109,36 +168,5 @@ class myAgent(Agent):
         if id == 1:
             hValue += max(simplify_list.count(2) - simplify_list.count(3), 0)
 
+        #print("get a h value: "+ str(hValue))
         return hValue
-
-    def SelectAction(self, actions, game_state):
-
-        start_time = time.time()
-        myPQ = PriorityQueue()
-        visited = set()
-        best_g = dict()
-        startState = deepcopy(game_state)
-        startNode = (startState, 0, [])
-        myPQ.push(startNode, 0)
-
-        while not myPQ.isEmpty() and time.time() - start_time < THINKTIME:
-
-            state, cost, path = myPQ.pop()
-
-            if (not state in visited) or cost < best_g.get(state):
-                visited.add(state)
-                best_g[state] = cost
-                new_actions = self.GetActions(state)
-                for a in new_actions:
-                    next_state = deepcopy(state)
-                    next_path = path + [a]
-                    next_cost = cost + 1
-                    reward = self.DoAction(next_state, a)
-                    if reward:
-                        print(f'Move {len(next_path)}, path found:', next_path)
-                        return next_path[0]
-                    else:
-                        priority = cost + 1 + self.GetHeuristic(next_state)
-                        myPQ.push((next_state, next_cost, next_path), priority)
-
-        return random.choice(actions)
