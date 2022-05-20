@@ -7,6 +7,7 @@ from copy import deepcopy
 from template import Agent
 from Yinsh.yinsh_model import YinshGameRule
 import random, time, heapq
+import numpy as np
 
 TIMELIMIT = 0.95
 
@@ -88,8 +89,13 @@ class myAgent():
 
         #feature4
         features.append(self.getStepScore(next_state.board)/21)
+
+        #feature5 棋盘中我方环周围的对方环数量
+        features.append(self.getComponentsAround(next_state, 2*(1-self.id)+1)/8)
+
         return features
 
+#并没有严格【-1,1】
     def getStepScore(self, board):
         self_ring = 2*(self.id+1)-1
         max_value = 0
@@ -101,7 +107,7 @@ class myAgent():
                     horizon = [board[i][j], board[i][j + 1], board[i][j + 2], board[i][j + 3], board[i][j + 4]]
                     if horizon.count(self_ring) > 0:
                         value1 += 10
-                    if 5 in horizon:
+                    if 5 in horizon or (self.id == 0 and 3 in horizon) or (self.id == 1 and 1 in horizon):
                         continue
                     else:
                         horizonValue = self.HeuristicValue(horizon, self.id)
@@ -115,7 +121,7 @@ class myAgent():
                     vertical = [board[i][j], board[i + 1][j], board[i + 2][j], board[i + 3][j], board[i + 4][j]]
                     if vertical.count(self_ring) > 0:
                         value2 += 10
-                    if 5 in vertical:
+                    if 5 in vertical or (self.id == 0 and 3 in vertical) or (self.id == 1 and 1 in vertical):
                         continue
                     else:
                         verticalValue = self.HeuristicValue(vertical, self.id)
@@ -129,7 +135,7 @@ class myAgent():
                              board[i + 4][j - 4]]
                     if slant.count(self_ring) > 0:
                         value3 += 10
-                    if 5 in slant:
+                    if 5 in slant or (self.id == 0 and 3 in slant) or (self.id == 1 and 1 in slant):
                         continue
                     else:
                         slantValue = self.HeuristicValue(slant, self.id)
@@ -168,3 +174,38 @@ class myAgent():
 
         #print("get a h value: "+ str(hValue))
         return hValue
+
+    def getComponentsAround(self, state, component):
+        components = 0
+        self_rings = state.ring_pos[self.id]
+        board = state.board
+        larger_board = []
+        larger_board.insert(0, [5,5,5,5,5,5,5,5,5,5,5,5,5])
+        for i in range(11):
+            bList = board[i].tolist()
+            bList.insert(0,5)
+            bList.append(5)
+            larger_board.append(bList)
+        larger_board.append([5,5,5,5,5,5,5,5,5,5,5,5,5])
+        new_board = np.array(larger_board)
+        for self_ring in self_rings:
+            (i,j) = self_ring
+            print("ring: "+ str((i,j)))
+            if new_board[i + 1][j] == component:
+                components += 1
+            if new_board[i][j + 1] == component:
+                components += 1
+            if new_board[i - 1][j] == component:
+                components += 1
+            if new_board[i][j - 1] == component:
+                components += 1
+            if new_board[i + 1][j + 1] == component:
+                components += 1
+            if new_board[i + 1][j - 1] == component:
+                components += 1
+            if new_board[i - 1][j + 1] == component:
+                components += 1
+            if new_board[i - 1][j - 1] == component:
+                components += 1
+        print(components/len(self_rings))
+        return components/len(self_rings)
