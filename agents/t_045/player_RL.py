@@ -11,17 +11,6 @@ import numpy as np
 
 TIMELIMIT = 0.95
 
-RING_BOARD = [[-1, -1, -1, -1, -1, -1, 4, 4, 4, 4, -1],
-              [-1, -1, -1, -1, 4, 5, 5, 5, 5, 5, 4],
-              [-1, -1, -1, 4, 5, 6, 6, 6, 6, 5, 4],
-              [-1, -1, 4, 5, 6, 7, 7, 7, 6, 5, 4],
-              [-1, 4, 5, 6, 7, 8, 8, 7, 6, 5, 4],
-              [-1, 5, 6, 7, 8, 9, 8, 7, 6, 5, -1],
-              [4, 5, 6, 7, 8, 8, 7, 6, 5, 4, -1],
-              [4, 5, 6, 7, 7, 7, 6, 5, 4, -1, -1],
-              [4, 5, 6, 6, 6, 6, 5, 4, -1, -1, -1],
-              [4, 5, 5, 5, 5, 5, 4, -1, -1, -1, -1],
-              [-1, 4, 4, 4, 4, -1, -1, -1, -1, -1, -1]]
 
 
 class myAgent():
@@ -36,6 +25,17 @@ class myAgent():
         # print(self.weight)
         with open("agents/t_045/heuristic_chart.json", 'r', encoding='utf-8') as fw:
             self.hValue = json.load(fw)
+        self.RING_BOARD = [[-1, -1, -1, -1, -1, -1, 4, 4, 4, 4, -1],
+                      [-1, -1, -1, -1, 4, 5, 5, 5, 5, 5, 4],
+                      [-1, -1, -1, 4, 5, 6, 6, 6, 6, 5, 4],
+                      [-1, -1, 4, 5, 6, 7, 7, 7, 6, 5, 4],
+                      [-1, 4, 5, 6, 7, 8, 8, 7, 6, 5, 4],
+                      [-1, 5, 6, 7, 8, 9, 8, 7, 6, 5, -1],
+                      [4, 5, 6, 7, 8, 8, 7, 6, 5, 4, -1],
+                      [4, 5, 6, 7, 7, 7, 6, 5, 4, -1, -1],
+                      [4, 5, 6, 6, 6, 6, 5, 4, -1, -1, -1],
+                      [4, 5, 5, 5, 5, 5, 4, -1, -1, -1, -1],
+                      [-1, 4, 4, 4, 4, -1, -1, -1, -1, -1, -1]]
 
     def GetActions(self, state):
         return self.game_rule.getLegalActions(state, self.id)
@@ -50,15 +50,15 @@ class myAgent():
         possible_list = []
         ring_1, ring_2 = state.ring_pos
         for pos in ring_1:
-            RING_BOARD[pos[0]][pos[1]] = -1
+            self.RING_BOARD[pos[0]][pos[1]] = -1
         for pos in ring_2:
-            RING_BOARD[pos[0]][pos[1]] = -1
+            self.RING_BOARD[pos[0]][pos[1]] = -1
         for i in range(10):
             for j in range(10):
-                current_max = max(current_max, RING_BOARD[i][j])
+                current_max = max(current_max, self.RING_BOARD[i][j])
         for i in range(10):
             for j in range(10):
-                if RING_BOARD[i][j] == current_max:
+                if self.RING_BOARD[i][j] == current_max:
                     possible_list += [(i, j)]
         return random.choice(possible_list)
 
@@ -75,7 +75,7 @@ class myAgent():
         for action in actions:
             if time.time() - start_time > TIMELIMIT:
                 # print(time.time() - start_time)
-                print("time out!!!")
+                # print("time out!!!")
                 break
             Q_value = self.getQValue(deepcopy(currentState), action)
             # print("get qValue:" + str(Q_value))
@@ -100,8 +100,11 @@ class myAgent():
         opponent_counter = 2 * (2 - self.id)
         features = []
 
-        # feature1
+        current_state = deepcopy(state)
+        current_danger = self.getDangercombine(current_state.board, self.id)
         next_state = deepcopy(state)
+
+        # feature1
         score = self.DoAction(next_state, action)
         if score > 1:
             print("score is greater than 1: " + str(score))
@@ -121,6 +124,17 @@ class myAgent():
 
         # feature5 棋盘中我方环周围的对方环数量
         # features.append(self.getComponentsAround(next_state, 2 * (1 - self.id) + 1) / 8)
+
+        # feature6,danger combines
+        next_danger = self.getDangercombine(next_state.board, self.id)
+        if current_danger >0:
+            danger_feature = (current_danger-next_danger)/current_danger
+        else:
+            danger_feature = 0
+        features.append(danger_feature)
+
+        # if danger_feature != 0:
+        #     print(danger_feature)
 
         return features
 
@@ -222,7 +236,7 @@ class myAgent():
         new_board = np.array(larger_board)
         for self_ring in self_rings:
             (i, j) = self_ring
-            print("ring: " + str((i, j)))
+            # print("ring: " + str((i, j)))
             if new_board[i + 1][j] == component:
                 components += 1
             if new_board[i][j + 1] == component:
@@ -239,5 +253,30 @@ class myAgent():
                 components += 1
             if new_board[i - 1][j - 1] == component:
                 components += 1
-        print(components / len(self_rings))
+        # print(components / len(self_rings))
         return components / len(self_rings)
+
+    def getDangercombine(self, board, id):
+        dangers = 0
+        if id == 0:
+            opponent = 4
+        else:
+            opponent = 2
+        for i in range(1, 10):
+            for j in range(11):
+                if j + 4 <= 10:
+                    horizon = [board[i][j], board[i][j + 1], board[i][j + 2], board[i][j + 3], board[i][j + 4]]
+                    if horizon.count(opponent) > 3:
+                        dangers += 1
+                if i + 4 <= 10:
+                    vertical = [board[i][j], board[i + 1][j], board[i + 2][j], board[i + 3][j], board[i + 4][j]]
+                    if vertical.count(opponent) > 3:
+                        dangers += 1
+
+                if i + 4 <= 10 and j - 4 >= 0:
+                    slant = [board[i][j], board[i + 1][j - 1], board[i + 2][j - 2], board[i + 3][j - 3],
+                             board[i + 4][j - 4]]
+                    if slant.count(opponent) > 3:
+                        dangers += 1
+
+        return dangers
