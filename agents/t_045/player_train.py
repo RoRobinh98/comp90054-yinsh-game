@@ -8,7 +8,10 @@ from template import Agent
 from Yinsh.yinsh_model import YinshGameRule
 import random, time, heapq
 
-THINKINGTIME = 0.95
+TIMELIMIT = 0.95
+EPS = 0.001
+ALPHA = 0.1
+GAMMA = 0.9
 
 
 
@@ -36,24 +39,46 @@ class myAgent():
     def SelectAction(self, actions, currentState):
         self.round += 1
         start_time = time.time()
-        best_Q = -999
+        
         best_action = random.choice(actions)
-
         if self.round <= 5:
             return best_action
 
-        for action in actions:
-            Q_value = self.getQValue(deepcopy(currentState), action)
-            #print("get qValue:" + str(Q_value))
-            if Q_value > best_Q:
-                best_Q = Q_value
-                best_action = action
+        best_Q = -999
 
+        if random.uniform(0,1) < 1 - EPS:
+            for action in actions:
+                if time.time() - start_time > TIMELIMIT:
+                    print("time out!!!")
+                    break
+                Q_value = self.getQValue(deepcopy(currentState), action)
+                if Q_value > best_Q:
+                    best_Q = Q_value
+                    best_action = action
+        else:
+            Q_value = self.getQValue(deepcopy(currentState), best_action)
+            best_Q = Q_value
+        features = self.getFeatures(deepcopy(currentState), best_action)
 
-        if time.time() - start_time > THINKINGTIME:
-            print(time.time() - start_time)
-            print("time out!!!")
+        next_state = deepcopy(currentState)
+        reward = self.DoAction(next_state, best_action)
 
+        next_actions = self.GetActions(next_state)
+        best_next_Q = -999
+        for next_action in next_actions:
+            if time.time() - start_time > TIMELIMIT:
+                print("time out!!!")
+                break
+            next_Q_value = self.getQValue(deepcopy(next_state), next_action)
+            best_next_Q = max(best_next_Q, next_Q_value)
+
+        for i in range(len(features)):
+            self.weight[i] = self.weight[i] + ALPHA * (reward + GAMMA * best_next_Q - best_Q) * features[i]
+        with open("agents/t_045/weight.json", 'w', encoding='utf-8') as f:
+            json.dump({'weight': self.weight}, f)
+        print(self.weight)
+
+        # print(time.time() - start_time)
         return best_action
 
     def getQValue(self, state, action):

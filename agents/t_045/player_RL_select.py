@@ -21,7 +21,8 @@ class myAgent():
         self.weight = [0, 0, 0, 0]
         self.round = 0
         with open("agents/t_045/weight_RL.json", 'r', encoding='utf-8') as fw:
-            self.weight = json.load(fw)['weight']
+            # need to do slice according to which features you choose
+            self.weight = json.load(fw)['weight'][:4]
         # print(self.weight)
         with open("agents/t_045/heuristic_chart.json", 'r', encoding='utf-8') as fw:
             self.hValue = json.load(fw)
@@ -123,15 +124,15 @@ class myAgent():
         features.append(self.getStepScore(next_state.board) / 21)
 
         # feature5 棋盘中我方环周围的对方环数量
-        features.append(-self.getComponentsAround(next_state, 2 * (1 - self.id) + 1) / 8)
+        # features.append(-self.getComponentsAround(next_state, 2 * (1 - self.id) + 1) / 8)
 
         # feature6 danger combines
-        next_danger = self.getDangercombine(next_state.board, self.id)
-        if current_danger >0:
-            danger_feature = (current_danger-next_danger)/current_danger
-        else:
-            danger_feature = 0
-        features.append(danger_feature)
+        # next_danger = self.getDangercombine(next_state.board, self.id)
+        # if current_danger >0:
+        #     danger_feature = (current_danger-next_danger)/current_danger
+        # else:
+        #     danger_feature = 0
+        # features.append(danger_feature)
 
         # if danger_feature != 0:
         #     print(danger_feature)
