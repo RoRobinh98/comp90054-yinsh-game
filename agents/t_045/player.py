@@ -21,7 +21,7 @@ class myAgent():
         self.round = 0
         with open("agents/t_045/weight.json", 'r', encoding='utf-8') as fw:
             self.weight = json.load(fw)['weight']
-        print(self.weight)
+        # print(self.weight)
         with open("agents/t_045/heuristic_chart.json", 'r', encoding='utf-8') as fw:
             self.hValue = json.load(fw)
 

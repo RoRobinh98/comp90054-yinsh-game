@@ -33,7 +33,7 @@ class myAgent():
         self.round = 0
         with open("agents/t_045/weight.json", 'r', encoding='utf-8') as fw:
             self.weight = json.load(fw)['weight']
-        print(self.weight)
+        # print(self.weight)
         with open("agents/t_045/heuristic_chart.json", 'r', encoding='utf-8') as fw:
             self.hValue = json.load(fw)
 
@@ -120,7 +120,7 @@ class myAgent():
         features.append(self.getStepScore(next_state.board) / 21)
 
         # feature5 棋盘中我方环周围的对方环数量
-        features.append(self.getComponentsAround(next_state, 2 * (1 - self.id) + 1) / 8)
+        # features.append(self.getComponentsAround(next_state, 2 * (1 - self.id) + 1) / 8)
 
         return features
 
@@ -136,7 +136,8 @@ class myAgent():
                     horizon = [board[i][j], board[i][j + 1], board[i][j + 2], board[i][j + 3], board[i][j + 4]]
                     if horizon.count(self_ring) > 0:
                         value1 += 10
-                    if 5 in horizon or (self.id == 0 and 3 in horizon) or (self.id == 1 and 1 in horizon):
+                    if 5 in horizon:
+                    # if 5 in horizon or (self.id == 0 and 3 in horizon) or (self.id == 1 and 1 in horizon):
                         continue
                     else:
                         horizonValue = self.HeuristicValue(horizon, self.id)
@@ -150,7 +151,8 @@ class myAgent():
                     vertical = [board[i][j], board[i + 1][j], board[i + 2][j], board[i + 3][j], board[i + 4][j]]
                     if vertical.count(self_ring) > 0:
                         value2 += 10
-                    if 5 in vertical or (self.id == 0 and 3 in vertical) or (self.id == 1 and 1 in vertical):
+                    if 5 in vertical:
+                    # if 5 in vertical or (self.id == 0 and 3 in vertical) or (self.id == 1 and 1 in vertical):
                         continue
                     else:
                         verticalValue = self.HeuristicValue(vertical, self.id)
@@ -164,7 +166,8 @@ class myAgent():
                              board[i + 4][j - 4]]
                     if slant.count(self_ring) > 0:
                         value3 += 10
-                    if 5 in slant or (self.id == 0 and 3 in slant) or (self.id == 1 and 1 in slant):
+                    if 5 in slant:
+                    # if 5 in slant or (self.id == 0 and 3 in slant) or (self.id == 1 and 1 in slant):
                         continue
                     else:
                         slantValue = self.HeuristicValue(slant, self.id)
