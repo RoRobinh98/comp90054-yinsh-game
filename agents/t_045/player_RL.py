@@ -139,20 +139,28 @@ class myAgent():
         # if danger_feature != 0:
         #     print(danger_feature)
 
-        #feature7
-        colinearPos = set()
-        for r in self.getOppoRingsPos(next_state.board):
-            for i in range(11):
-                if (r[0],i) not in ILLEGAL_POS and i != r[1]:
-                    colinearPos.add((r[0],i))
-                if (i,r[1]) not in ILLEGAL_POS and i != r[0]:
-                    colinearPos.add((i,r[1]))
-                if i != 0 and r[0] - i >= 0 and r[0] + i <= 10 and (r[0]-i,r[1]+i) not in ILLEGAL_POS:
-                    colinearPos.add((r[0]-i,r[1]+i))
-                if i != 0 and r[0] + i <= 10 and r[0] - i >= 0 and (r[0]+i,r[1]-i) not in ILLEGAL_POS:
-                    colinearPos.add((r[0]+i,r[1]-i))
-        features.append(-len(colinearPos)/51)
+        #feature7 how many positions are colinear with self rings
+        # colinearPos = set()
+        # for r in self.getSelfRingsPos(next_state.board):
+        #     for i in range(11):
+        #         if (r[0],i) not in ILLEGAL_POS and i != r[1]:
+        #             colinearPos.add((r[0],i))
+        #         if (i,r[1]) not in ILLEGAL_POS and i != r[0]:
+        #             colinearPos.add((i,r[1]))
+        #         if i != 0 and r[0] - i >= 0 and r[0] + i <= 10 and (r[0]-i,r[1]+i) not in ILLEGAL_POS:
+        #             colinearPos.add((r[0]-i,r[1]+i))
+        #         if i != 0 and r[0] + i <= 10 and r[0] - i >= 0 and (r[0]+i,r[1]-i) not in ILLEGAL_POS:
+        #             colinearPos.add((r[0]+i,r[1]-i))
+        # features.append(-len(colinearPos)/51)
         return features
+
+    def getSelfRingsPos(self, board):
+        rings = []
+        for i in range(11):
+            for j in range(11): 
+                if board[i][j] == 2 * self.id + 1:
+                    rings.append((i,j))
+        return rings
 
     def getOppoRingsPos(self, board):
         rings = []
