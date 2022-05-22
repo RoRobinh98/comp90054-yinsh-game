@@ -136,9 +136,6 @@ class myAgent():
             danger_feature = 0
         features.append(danger_feature)
 
-        # if danger_feature != 0:
-        #     print(danger_feature)
-
         #feature7 how many positions are colinear with self rings
         # colinearPos = set()
         # for r in self.getSelfRingsPos(next_state.board):
@@ -151,7 +148,8 @@ class myAgent():
         #             colinearPos.add((r[0]-i,r[1]+i))
         #         if i != 0 and r[0] + i <= 10 and r[0] - i >= 0 and (r[0]+i,r[1]-i) not in ILLEGAL_POS:
         #             colinearPos.add((r[0]+i,r[1]-i))
-        # features.append(-len(colinearPos)/51)
+        # features.append(len(colinearPos)/51)
+        
         return features
 
     def getSelfRingsPos(self, board):
