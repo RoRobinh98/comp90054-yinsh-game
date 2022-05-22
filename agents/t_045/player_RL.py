@@ -6,6 +6,7 @@ import json
 from copy import deepcopy
 from template import Agent
 from Yinsh.yinsh_model import YinshGameRule
+from Yinsh.yinsh_utils import ILLEGAL_POS
 import random, time, heapq
 import numpy as np
 
@@ -18,7 +19,7 @@ class myAgent():
         self.id = _id
         self.game_rule = YinshGameRule(2)
 
-        self.weight = [0, 0, 0, 0]
+        self.weight = [1, 0.1, 0.1, 0.2]
         self.round = 0
         with open("agents/t_045/weight_RL.json", 'r', encoding='utf-8') as fw:
             self.weight = json.load(fw)['weight']
@@ -136,7 +137,28 @@ class myAgent():
         # if danger_feature != 0:
         #     print(danger_feature)
 
+        #feature7
+        colinearPos = set()
+        for r in self.getOppoRingsPos(next_state.board):
+            for i in range(11):
+                if (r[0],i) not in ILLEGAL_POS and i != r[1]:
+                    colinearPos.add((r[0],i))
+                if (i,r[1]) not in ILLEGAL_POS and i != r[0]:
+                    colinearPos.add((i,r[1]))
+                if i != 0 and r[0] - i >= 0 and r[0] + i <= 10 and (r[0]-i,r[1]+i) not in ILLEGAL_POS:
+                    colinearPos.add((r[0]-i,r[1]+i))
+                if i != 0 and r[0] + i <= 10 and r[0] - i >= 0 and (r[0]+i,r[1]-i) not in ILLEGAL_POS:
+                    colinearPos.add((r[0]+i,r[1]-i))
+        features.append(-len(colinearPos)/51)
         return features
+
+    def getOppoRingsPos(self, board):
+        rings = []
+        for i in range(11):
+            for j in range(11): 
+                if board[i][j] == 3 - 2 * self.id:
+                    rings.append((i,j))
+        return rings
 
     # 并没有严格【-1,1】
     def getStepScore(self, board):
@@ -236,7 +258,7 @@ class myAgent():
         new_board = np.array(larger_board)
         for self_ring in self_rings:
             (i, j) = self_ring
-            # print("ring: " + str((i, j)))
+            # print("r: " + str((i, j)))
             if new_board[i + 1][j] == component:
                 components += 1
             if new_board[i][j + 1] == component:
