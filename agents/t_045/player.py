@@ -135,7 +135,7 @@ class myAgent():
             danger_feature = 0
         features.append(danger_feature)
 
-        # feature7 how many positions are colinear with self rings
+        # feature how many positions are colinear with self rings
         # colinearPos = set()
         # for r in self.getSelfRingsPos(next_state.board):
         #     for i in range(11):

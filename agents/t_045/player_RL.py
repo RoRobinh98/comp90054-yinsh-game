@@ -12,17 +12,23 @@ import numpy as np
 
 TIMELIMIT = 0.95
 
-
+def listFunc(l1, l2):
+        o = -1
+        for i in range(len(l1)):
+            if l1[i] in l2:
+                o = i
+                break
+        return o
 
 class myAgent():
     def __init__(self, _id):
         self.id = _id
         self.game_rule = YinshGameRule(2)
 
-        self.weight = [1, 0.1, 0.1, 0.2, 0.1, 0.2]
+        self.weight = [1, 0.1, 0.1, 0.2, 0.1, 0.2, 0.1, 0.1]
         self.round = 0
-        with open("agents/t_045/weight_RL.json", 'r', encoding='utf-8') as fw:
-            self.weight = json.load(fw)['weight']
+        # with open("agents/t_045/weight_RL.json", 'r', encoding='utf-8') as fw:
+        #     self.weight = json.load(fw)['weight']
         # print(self.weight)
         with open("agents/t_045/heuristic_chart.json", 'r', encoding='utf-8') as fw:
             self.hValue = json.load(fw)
@@ -136,7 +142,7 @@ class myAgent():
             danger_feature = 0
         features.append(danger_feature)
 
-        #feature7 how many positions are colinear with self rings
+        #feature how many positions are colinear with self rings
         # colinearPos = set()
         # for r in self.getSelfRingsPos(next_state.board):
         #     for i in range(11):
@@ -149,6 +155,35 @@ class myAgent():
         #         if i != 0 and r[0] + i <= 10 and r[0] - i >= 0 and (r[0]+i,r[1]-i) not in ILLEGAL_POS:
         #             colinearPos.add((r[0]+i,r[1]-i))
         # features.append(len(colinearPos)/51)
+
+        # feature7 how many legal ring moves for oppo
+        legalMoveNum = 0
+        # feature8 how many counters controlled by oppo rings
+        cntrControlNum = 0
+        for r in self.getOppoRingsPos(next_state.board):
+            for v in self.getRingLines(next_state.board, r).values():
+                if v:
+                    # index of first non-blank
+                    idx1 = listFunc(v,[1,2,3,4,5])
+                    if idx1 == -1:
+                        legalMoveNum = legalMoveNum + len(v)
+                    else:
+                        vv = v[idx1:]
+                        flag = listFunc(vv,[0,1,3,5])
+                        if flag == -1:
+                            legalMoveNum = legalMoveNum + idx1
+                        else:
+                            # index of first interruption 
+                            idx2 = idx1 + flag
+                            if v[idx2] == 0:
+                                legalMoveNum = legalMoveNum + idx1 + 1
+                                cntrControlNum = cntrControlNum + flag
+                            else:
+                                legalMoveNum = legalMoveNum + idx1
+        # print(legalMoveNum)
+        # print(cntrControlNum)
+        features.append(-legalMoveNum/51)
+        features.append(-cntrControlNum/51)
         
         return features
 
@@ -167,6 +202,24 @@ class myAgent():
                 if board[i][j] == 3 - 2 * self.id:
                     rings.append((i,j))
         return rings
+
+    def getRingLines(self, board, ring):
+        l = dict()
+        l['w'], l['e'], l['n'], l['s'], l['ws'], l['en'] = ([] for i in range(6))
+        for i in reversed(range(ring[1])):
+            l['w'].append(board[ring[0]][i])
+        for i in range(ring[1]+1,11):
+            l['e'].append(board[ring[0]][i])
+        for i in reversed(range(ring[1])):
+            l['n'].append(board[i][ring[1]])
+        for i in range(ring[0]+1,11):
+            l['w'].append(board[i][ring[1]])
+        for i in range(1,min(11-ring[0],ring[1]+1)):
+            l['ws'].append(board[ring[0]+i][ring[1]-i])
+        for i in range(1,min(11-ring[1],ring[0]+1)):
+            l['en'].append(board[ring[0]-i][ring[1]+i])
+        # print(l)
+        return l
 
     def getStepScore(self, board):
         self_ring = 2 * (self.id + 1) - 1
