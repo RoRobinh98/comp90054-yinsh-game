@@ -126,7 +126,7 @@ class myAgent():
         features.append(self.getStepScore(next_state.board) / 21)
 
         # feature5 棋盘中我方环周围的对方环数量
-        features.append(-self.getComponentsAround(next_state, 2 * (1 - self.id) + 1) / 8)
+        features.append(self.getComponentsAround(next_state, 2 * (1 - self.id) + 1) / 6)
 
         # feature6 danger combines
         next_danger = self.getDangercombine(next_state, self.id, opponent_ring, current_danger)
@@ -276,10 +276,6 @@ class myAgent():
             if new_board[i][j - 1] == component:
                 components += 1
             if new_board[i + 1][j + 1] == component:
-                components += 1
-            if new_board[i + 1][j - 1] == component:
-                components += 1
-            if new_board[i - 1][j + 1] == component:
                 components += 1
             if new_board[i - 1][j - 1] == component:
                 components += 1
