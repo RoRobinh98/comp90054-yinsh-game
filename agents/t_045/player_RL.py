@@ -168,7 +168,6 @@ class myAgent():
                     rings.append((i,j))
         return rings
 
-    # 并没有严格【-1,1】
     def getStepScore(self, board):
         self_ring = 2 * (self.id + 1) - 1
         max_value = 0
@@ -181,7 +180,6 @@ class myAgent():
                     if horizon.count(self_ring) > 0:
                         value1 += 10
                     if 5 in horizon:
-                    # if 5 in horizon or (self.id == 0 and 3 in horizon) or (self.id == 1 and 1 in horizon):
                         continue
                     else:
                         horizonValue = self.HeuristicValue(horizon, self.id)
@@ -196,7 +194,6 @@ class myAgent():
                     if vertical.count(self_ring) > 0:
                         value2 += 10
                     if 5 in vertical:
-                    # if 5 in vertical or (self.id == 0 and 3 in vertical) or (self.id == 1 and 1 in vertical):
                         continue
                     else:
                         verticalValue = self.HeuristicValue(vertical, self.id)
@@ -211,7 +208,6 @@ class myAgent():
                     if slant.count(self_ring) > 0:
                         value3 += 10
                     if 5 in slant:
-                    # if 5 in slant or (self.id == 0 and 3 in slant) or (self.id == 1 and 1 in slant):
                         continue
                     else:
                         slantValue = self.HeuristicValue(slant, self.id)
