@@ -102,7 +102,9 @@ class myAgent():
         features = []
 
         current_state = deepcopy(state)
-        current_danger = self.getDangercombine(current_state.board, self.id)
+        opponent_ring = len(current_state.ring_pos[1 - self.id])
+        current_danger = 0
+        current_danger = self.getDangercombine(current_state, self.id, opponent_ring, current_danger)
         next_state = deepcopy(state)
 
         # feature1
@@ -124,11 +126,11 @@ class myAgent():
         features.append(self.getStepScore(next_state.board) / 21)
 
         # feature5 棋盘中我方环周围的对方环数量
-        features.append(-self.getComponentsAround(next_state, 2 * (1 - self.id) + 1) / 8)
+        # features.append(-self.getComponentsAround(next_state, 2 * (1 - self.id) + 1) / 8)
 
         # feature6 danger combines
-        next_danger = self.getDangercombine(next_state.board, self.id)
-        if current_danger >0:
+        next_danger = self.getDangercombine(next_state, self.id, opponent_ring, current_danger)
+        if current_danger != 0:
             danger_feature = (current_danger-next_danger)/current_danger
         else:
             danger_feature = 0
@@ -278,7 +280,13 @@ class myAgent():
         # print(components / len(self_rings))
         return components / len(self_rings)
 
-    def getDangercombine(self, board, id):
+    def getDangercombine(self, state, id, current_ring, current_danger):
+        next_ring = len(state.ring_pos[1 - self.id])
+        if current_ring > next_ring:
+            print("yes")
+            return 2*current_danger
+
+        board = state.board
         dangers = 0
         if id == 0:
             opponent = 4
