@@ -21,7 +21,7 @@ class myAgent():
         self.id = _id
         self.game_rule = YinshGameRule(2)
 
-        self.weight = [1, 0.1, 0.1, 0.2]
+        self.weight = [1, 0.1, 0.1, 0.2, 0.1, 0.2]
         self.round = 0
         with open("agents/t_045/weight_RL.json", 'r', encoding='utf-8') as fw:
             self.weight = json.load(fw)['weight']
@@ -151,7 +151,7 @@ class myAgent():
         features.append(self.getStepScore(next_state.board) / 21)
 
         # feature5 棋盘中我方环周围的对方环数量
-        # features.append(-self.getComponentsAround(next_state, 2 * (1 - self.id) + 1) / 8)
+        features.append(-self.getComponentsAround(next_state, 2 * (1 - self.id) + 1) / 8)
 
         # feature6 danger combines
         next_danger = self.getDangercombine(next_state, self.id, opponent_ring, current_danger)
@@ -306,7 +306,7 @@ class myAgent():
     def getDangercombine(self, state, id, current_ring, current_danger):
         next_ring = len(state.ring_pos[1 - self.id])
         if current_ring > next_ring:
-            print("yes")
+            # print("yes")
             return 2*current_danger
 
         board = state.board

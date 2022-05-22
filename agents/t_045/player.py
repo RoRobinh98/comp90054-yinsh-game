@@ -1,4 +1,3 @@
-
 import sys
 sys.path.append('agents/t_045/')
 import json
@@ -7,8 +6,9 @@ from copy import deepcopy
 from template import Agent
 from Yinsh.yinsh_model import YinshGameRule
 import random, time, heapq
+import numpy as np
 
-THINKINGTIME = 0.95
+TIMELIMIT = 0.95
 
 
 
@@ -17,13 +17,24 @@ class myAgent():
         self.id = _id
         self.game_rule = YinshGameRule(2)
 
-        self.weight = [0, 0, 0, 0]
+        self.weight = [1, 0.1, 0.1, 0.2, 0.2]
         self.round = 0
-        with open("agents/t_045/weight.json", 'r', encoding='utf-8') as fw:
-            self.weight = json.load(fw)['weight']
+        # with open("agents/t_045/weight_RL.json", 'r', encoding='utf-8') as fw:
+        #     self.weight = json.load(fw)['weight']
         # print(self.weight)
         with open("agents/t_045/heuristic_chart.json", 'r', encoding='utf-8') as fw:
             self.hValue = json.load(fw)
+        self.RING_BOARD = [[-1, -1, -1, -1, -1, -1, 4, 4, 4, 4, -1],
+                      [-1, -1, -1, -1, 4, 5, 5, 5, 5, 5, 4],
+                      [-1, -1, -1, 4, 5, 6, 6, 6, 6, 5, 4],
+                      [-1, -1, 4, 5, 6, 7, 7, 7, 6, 5, 4],
+                      [-1, 4, 5, 6, 7, 8, 8, 7, 6, 5, 4],
+                      [-1, 5, 6, 7, 8, 9, 8, 7, 6, 5, -1],
+                      [4, 5, 6, 7, 8, 8, 7, 6, 5, 4, -1],
+                      [4, 5, 6, 7, 7, 7, 6, 5, 4, -1, -1],
+                      [4, 5, 6, 6, 6, 6, 5, 4, -1, -1, -1],
+                      [4, 5, 5, 5, 5, 5, 4, -1, -1, -1, -1],
+                      [-1, 4, 4, 4, 4, -1, -1, -1, -1, -1, -1]]
 
     def GetActions(self, state):
         return self.game_rule.getLegalActions(state, self.id)
@@ -33,67 +44,98 @@ class myAgent():
         state = self.game_rule.generateSuccessor(state, action, self.id)
         return state.agents[self.id].score - score
 
+    def SelectRing(self, state):
+        current_max = -1
+        possible_list = []
+        ring_1, ring_2 = state.ring_pos
+        for pos in ring_1:
+            self.RING_BOARD[pos[0]][pos[1]] = -1
+        for pos in ring_2:
+            self.RING_BOARD[pos[0]][pos[1]] = -1
+        for i in range(10):
+            for j in range(10):
+                current_max = max(current_max, self.RING_BOARD[i][j])
+        for i in range(10):
+            for j in range(10):
+                if self.RING_BOARD[i][j] == current_max:
+                    possible_list += [(i, j)]
+        return random.choice(possible_list)
+
     def SelectAction(self, actions, currentState):
         self.round += 1
         start_time = time.time()
-        best_Q = -999
-        best_action = random.choice(actions)
 
+        best_action = random.choice(actions)
         if self.round <= 5:
+            best_action['place pos'] = self.SelectRing(currentState)
             return best_action
 
+        best_Q = -999
         for action in actions:
+            if time.time() - start_time > TIMELIMIT:
+                # print(time.time() - start_time)
+                # print("time out!!!")
+                break
             Q_value = self.getQValue(deepcopy(currentState), action)
-            #print("get qValue:" + str(Q_value))
+            # print("get qValue:" + str(Q_value))
             if Q_value > best_Q:
                 best_Q = Q_value
                 best_action = action
-
-
-        if time.time() - start_time > THINKINGTIME:
-            print(time.time() - start_time)
-            print("time out!!!")
-
         return best_action
 
     def getQValue(self, state, action):
         features = self.getFeatures(state, action)
-        #print("get features: " + str(features))
+        # print("get features: " + str(features))
         if len(features) != len(self.weight):
             print("features and weight not matched!")
             return -999
         Q_value = 0
         for i in range(len(features)):
-            Q_value += features[i]*self.weight[i]
+            Q_value += features[i] * self.weight[i]
         return Q_value
 
     def getFeatures(self, state, action):
-        self_counter = 2*(self.id + 1)
-        opponent_counter = 2*(2-self.id)
+        self_counter = 2 * (self.id + 1)
+        opponent_counter = 2 * (2 - self.id)
         features = []
 
-        #feature1
+        current_state = deepcopy(state)
+        opponent_ring = len(current_state.ring_pos[1 - self.id])
+        current_danger = 0
+        current_danger = self.getDangercombine(current_state, self.id, opponent_ring, current_danger)
         next_state = deepcopy(state)
+
+        # feature1
         score = self.DoAction(next_state, action)
         if score > 1:
             print("score is greater than 1: " + str(score))
         features.append(score)
 
-        #feature2
+        # feature2
         current_board = "".join(map(str, next_state.board))
-        self_counter_score = current_board.count(str(self_counter))/51
+        self_counter_score = current_board.count(str(self_counter)) / 51
         features.append(self_counter_score)
 
-        #feature3
-        oppo_counter_score = current_board.count(str(opponent_counter))/51
+        # feature3
+        oppo_counter_score = current_board.count(str(opponent_counter)) / 51
         features.append(-oppo_counter_score)
 
-        #feature4
-        features.append(self.getStepScore(next_state.board)/21)
+        # feature4
+        features.append(self.getStepScore(next_state.board) / 21)
+
+        # feature6 danger combines
+        next_danger = self.getDangercombine(next_state, self.id, opponent_ring, current_danger)
+        if current_danger != 0:
+            danger_feature = (current_danger-next_danger)/current_danger
+        else:
+            danger_feature = 0
+        features.append(danger_feature)
+        
         return features
 
+    # 并没有严格【-1,1】
     def getStepScore(self, board):
-        self_ring = 2*(self.id+1)-1
+        self_ring = 2 * (self.id + 1) - 1
         max_value = 0
         hValue = 51
         for i in range(1, 10):
@@ -104,6 +146,7 @@ class myAgent():
                     if horizon.count(self_ring) > 0:
                         value1 += 10
                     if 5 in horizon:
+                    # if 5 in horizon or (self.id == 0 and 3 in horizon) or (self.id == 1 and 1 in horizon):
                         continue
                     else:
                         horizonValue = self.HeuristicValue(horizon, self.id)
@@ -118,6 +161,7 @@ class myAgent():
                     if vertical.count(self_ring) > 0:
                         value2 += 10
                     if 5 in vertical:
+                    # if 5 in vertical or (self.id == 0 and 3 in vertical) or (self.id == 1 and 1 in vertical):
                         continue
                     else:
                         verticalValue = self.HeuristicValue(vertical, self.id)
@@ -132,6 +176,7 @@ class myAgent():
                     if slant.count(self_ring) > 0:
                         value3 += 10
                     if 5 in slant:
+                    # if 5 in slant or (self.id == 0 and 3 in slant) or (self.id == 1 and 1 in slant):
                         continue
                     else:
                         slantValue = self.HeuristicValue(slant, self.id)
@@ -139,7 +184,7 @@ class myAgent():
                         value3 += (5 - slantValue) * 2
                     max_value = max(max_value, value3)
 
-        #print(max_value)
+        # print(max_value)
         return max_value
 
     def HeuristicValue(self, list, id):
@@ -168,5 +213,36 @@ class myAgent():
         if id == 1:
             hValue += max(simplify_list.count(2) - simplify_list.count(3), 0)
 
-        #print("get a h value: "+ str(hValue))
+        # print("get a h value: "+ str(hValue))
         return hValue
+
+    def getDangercombine(self, state, id, current_ring, current_danger):
+        next_ring = len(state.ring_pos[1 - self.id])
+        if current_ring > next_ring:
+            # print("yes")
+            return 2*current_danger
+
+        board = state.board
+        dangers = 0
+        if id == 0:
+            opponent = 4
+        else:
+            opponent = 2
+        for i in range(1, 10):
+            for j in range(11):
+                if j + 4 <= 10:
+                    horizon = [board[i][j], board[i][j + 1], board[i][j + 2], board[i][j + 3], board[i][j + 4]]
+                    if horizon.count(opponent) > 3:
+                        dangers += 1
+                if i + 4 <= 10:
+                    vertical = [board[i][j], board[i + 1][j], board[i + 2][j], board[i + 3][j], board[i + 4][j]]
+                    if vertical.count(opponent) > 3:
+                        dangers += 1
+
+                if i + 4 <= 10 and j - 4 >= 0:
+                    slant = [board[i][j], board[i + 1][j - 1], board[i + 2][j - 2], board[i + 3][j - 3],
+                             board[i + 4][j - 4]]
+                    if slant.count(opponent) > 3:
+                        dangers += 1
+
+        return dangers
