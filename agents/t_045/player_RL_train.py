@@ -12,7 +12,7 @@ import numpy as np
 
 TIMELIMIT = 0.95
 EPS = 0.001
-ALPHA = 0.1
+ALPHA = 0.01
 GAMMA = 0.9
 
 
@@ -162,7 +162,7 @@ class myAgent():
             danger_feature = 0
         features.append(danger_feature)
 
-        # feature7 how many positions are colinear with self rings
+        # feature how many positions are colinear with self rings
         # colinearPos = set()
         # for r in self.getSelfRingsPos(next_state.board):
         #     for i in range(11):
