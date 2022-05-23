@@ -108,9 +108,15 @@ class myAgent():
         features = []
 
         current_state = deepcopy(state)
+        current_self_score = current_state.agents[self.id].score
+        current_oppo_score = current_state.agents[1 - self.id].score
         opponent_ring = len(current_state.ring_pos[1 - self.id])
         current_danger = 0
         current_danger = self.getDangercombine(current_state, self.id, opponent_ring, current_danger)
+        current_board = "".join(map(str, current_state.board))
+        current_self_counter = current_board.count(str(self_counter))
+        current_oppo_counter = current_board.count(str(opponent_counter))
+
         next_state = deepcopy(state)
 
         # feature1
@@ -120,13 +126,21 @@ class myAgent():
         features.append(score)
 
         # feature2
-        current_board = "".join(map(str, next_state.board))
-        self_counter_score = current_board.count(str(self_counter)) / 51
-        features.append(self_counter_score)
+        next_board = "".join(map(str, next_state.board))
+        next_self_counter = next_board.count(str(self_counter))
+        next_self_score = next_state.agents[self.id].score
+        if next_self_score - current_self_score:
+            features.append(1)
+        else:
+            features.append((next_self_counter - current_self_counter)/51)
 
         # feature3
-        oppo_counter_score = current_board.count(str(opponent_counter)) / 51
-        features.append(-oppo_counter_score)
+        next_oppo_counter = next_board.count(str(opponent_counter))
+        next_oppo_score = next_state.agents[1-self.id].score
+        if next_oppo_score - current_oppo_score:
+            features.append(-1)
+        else:
+            features.append(-(next_oppo_counter - current_oppo_counter)/51)
 
         # feature4
         features.append(self.getStepScore(next_state.board) )
