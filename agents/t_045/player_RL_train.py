@@ -68,14 +68,15 @@ class myAgent():
     def SelectAction(self, actions, currentState):
         self.round += 1
         start_time = time.time()
-        
+
         best_action = random.choice(actions)
         if self.round <= 5:
+            best_action['place pos'] = self.SelectRing(currentState)
             return best_action
 
         best_Q = -999
 
-        if random.uniform(0,1) < 1 - EPS:
+        if random.uniform(0, 1) < 1 - EPS:
             for action in actions:
                 if time.time() - start_time > TIMELIMIT:
                     print("time out!!!")
@@ -148,7 +149,7 @@ class myAgent():
         features.append(-oppo_counter_score)
 
         # feature4
-        features.append(self.getStepScore(next_state.board) / 21)
+        features.append(self.getStepScore(next_state.board))
 
         # feature5 棋盘中我方环周围的对方环数量
         features.append(-self.getComponentsAround(next_state, 2 * (1 - self.id) + 1) / 8)
@@ -161,7 +162,7 @@ class myAgent():
             danger_feature = 0
         features.append(danger_feature)
 
-        #feature7 how many positions are colinear with self rings
+        # feature7 how many positions are colinear with self rings
         # colinearPos = set()
         # for r in self.getSelfRingsPos(next_state.board):
         #     for i in range(11):
@@ -180,64 +181,43 @@ class myAgent():
     def getSelfRingsPos(self, board):
         rings = []
         for i in range(11):
-            for j in range(11): 
+            for j in range(11):
                 if board[i][j] == 2 * self.id + 1:
-                    rings.append((i,j))
+                    rings.append((i, j))
         return rings
 
     # 并没有严格【-1,1】
     def getStepScore(self, board):
         self_ring = 2 * (self.id + 1) - 1
-        max_value = 0
         hValue = 51
         for i in range(1, 10):
             for j in range(11):
                 if j + 4 <= 10:
-                    value1 = 0
                     horizon = [board[i][j], board[i][j + 1], board[i][j + 2], board[i][j + 3], board[i][j + 4]]
-                    if horizon.count(self_ring) > 0:
-                        value1 += 10
                     if 5 in horizon:
-                    # if 5 in horizon or (self.id == 0 and 3 in horizon) or (self.id == 1 and 1 in horizon):
                         continue
                     else:
                         horizonValue = self.HeuristicValue(horizon, self.id)
-
-                        horizonValue = min(hValue, horizonValue)
-                        value1 += (5 - horizonValue) * 2
-                    max_value = max(max_value, value1)
-
+                        hValue = min(hValue, horizonValue)
                 if i + 4 <= 10:
-                    value2 = 0
                     vertical = [board[i][j], board[i + 1][j], board[i + 2][j], board[i + 3][j], board[i + 4][j]]
-                    if vertical.count(self_ring) > 0:
-                        value2 += 10
                     if 5 in vertical:
-                    # if 5 in vertical or (self.id == 0 and 3 in vertical) or (self.id == 1 and 1 in vertical):
                         continue
                     else:
                         verticalValue = self.HeuristicValue(vertical, self.id)
-                        verticalValue = min(hValue, verticalValue)
-                        value2 += (5 - verticalValue) * 2
-                    max_value = max(max_value, value2)
+                        hValue = min(hValue, verticalValue)
 
                 if i + 4 <= 10 and j - 4 >= 0:
-                    value3 = 0
                     slant = [board[i][j], board[i + 1][j - 1], board[i + 2][j - 2], board[i + 3][j - 3],
                              board[i + 4][j - 4]]
-                    if slant.count(self_ring) > 0:
-                        value3 += 10
                     if 5 in slant:
-                    # if 5 in slant or (self.id == 0 and 3 in slant) or (self.id == 1 and 1 in slant):
                         continue
                     else:
                         slantValue = self.HeuristicValue(slant, self.id)
-                        slantValue = min(hValue, slantValue)
-                        value3 += (5 - slantValue) * 2
-                    max_value = max(max_value, value3)
+                        hValue = min(hValue, slantValue)
 
         # print(max_value)
-        return max_value
+        return 1/hValue
 
     def HeuristicValue(self, list, id):
         if 5 in list:
@@ -307,7 +287,7 @@ class myAgent():
         next_ring = len(state.ring_pos[1 - self.id])
         if current_ring > next_ring:
             # print("yes")
-            return 2*current_danger
+            return 2 * current_danger
 
         board = state.board
         dangers = 0

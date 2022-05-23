@@ -129,7 +129,7 @@ class myAgent():
         features.append(-oppo_counter_score)
 
         # feature4
-        features.append(self.getStepScore(next_state.board) / 21)
+        features.append(self.getStepScore(next_state.board) )
 
         # feature5 棋盘中我方环周围的对方环数量
         features.append(self.getComponentsAround(next_state, 2 * (1 - self.id) + 1) / 6)
@@ -223,53 +223,38 @@ class myAgent():
 
     def getStepScore(self, board):
         self_ring = 2 * (self.id + 1) - 1
-        max_value = 0
         hValue = 51
         for i in range(1, 10):
             for j in range(11):
                 if j + 4 <= 10:
-                    value1 = 0
                     horizon = [board[i][j], board[i][j + 1], board[i][j + 2], board[i][j + 3], board[i][j + 4]]
-                    if horizon.count(self_ring) > 0:
-                        value1 += 10
                     if 5 in horizon:
                         continue
                     else:
                         horizonValue = self.HeuristicValue(horizon, self.id)
-
-                        horizonValue = min(hValue, horizonValue)
-                        value1 += (5 - horizonValue) * 2
-                    max_value = max(max_value, value1)
-
+                        hValue = min(hValue, horizonValue)
                 if i + 4 <= 10:
-                    value2 = 0
                     vertical = [board[i][j], board[i + 1][j], board[i + 2][j], board[i + 3][j], board[i + 4][j]]
-                    if vertical.count(self_ring) > 0:
-                        value2 += 10
                     if 5 in vertical:
                         continue
                     else:
                         verticalValue = self.HeuristicValue(vertical, self.id)
-                        verticalValue = min(hValue, verticalValue)
-                        value2 += (5 - verticalValue) * 2
-                    max_value = max(max_value, value2)
+                        hValue = min(hValue, verticalValue)
 
                 if i + 4 <= 10 and j - 4 >= 0:
-                    value3 = 0
                     slant = [board[i][j], board[i + 1][j - 1], board[i + 2][j - 2], board[i + 3][j - 3],
                              board[i + 4][j - 4]]
-                    if slant.count(self_ring) > 0:
-                        value3 += 10
                     if 5 in slant:
                         continue
                     else:
                         slantValue = self.HeuristicValue(slant, self.id)
-                        slantValue = min(hValue, slantValue)
-                        value3 += (5 - slantValue) * 2
-                    max_value = max(max_value, value3)
+                        hValue = min(hValue, slantValue)
 
-        # print(max_value)
-        return max_value
+        # print(1/hValue)
+        if hValue != 0:
+            return 1/hValue
+        else:
+            return 1.0
 
     def HeuristicValue(self, list, id):
         if 5 in list:
