@@ -43,7 +43,7 @@ class myAgent(Agent):
 
         start_time = time.time()
 
-        # final action chosen by MCT. random it first incase out of time
+        # final action chosen by MCT. random it first in case out of time
         random_action = random.choice(actions)
 
         # used for storing value, count, and action for backpropagation
@@ -59,16 +59,23 @@ class myAgent(Agent):
             # expand node
             expand_state = deepcopy(game_state)
 
+            # init every time
             current_actions = actions
             current_board = self.GetBoard(game_state)
+
+            # two queues used for store path
             queue_board = deque()
             queue_action = deque()
             queue_board.append(current_board)
 
-            while current_board in state_value and len(current_actions) > 0 and not reward:
+            while current_board in state_value and len(current_actions) > 0:
 
                 if time.time() - start_time >= THINKTIME:
                     return random_action
+
+                # once find reward, need to escape expansion and simulation
+                if reward:
+                    break
 
                 # multi arm bandit greedy method
                 if random.uniform(0, 1) > GAMMA and current_board in state_action:
@@ -89,22 +96,24 @@ class myAgent(Agent):
 
             # simulation part
             depth = 0
-            if len(current_actions) > 0 and reward == 0:
-                while not reward and len(current_actions) > 0 and depth < SIMULATE_MAX_DEPTH:
+            simulate_state = expand_state
+            while len(current_actions) > 0 and depth < SIMULATE_MAX_DEPTH:
 
-                    if time.time() - start_time >= THINKTIME:
-                        return random_action
+                if time.time() - start_time >= THINKTIME:
+                    return random_action
 
-                    simulate_action = random.choice(current_actions)
-                    next_state = deepcopy(expand_state)
-                    reward = self.DoAction(next_state, simulate_action)
-                    current_actions = self.GetActions(next_state)
-                    expand_state = next_state
-                    depth += 1
+                if reward:
+                    break
+                simulate_action = random.choice(current_actions)
+                next_state = deepcopy(simulate_state)
+                reward = self.DoAction(next_state, simulate_action)
+                current_actions = self.GetActions(next_state)
+                simulate_state = next_state
+                depth += 1
 
             # get Q-value
             value = self.Q_function(reward, depth)
-            queue_action.append('token')
+            queue_action.append('token')    # make sure two queues are same length
 
             # backpropagation
             while len(queue_board):
