@@ -11,9 +11,8 @@ import random, time, heapq
 import numpy as np
 
 TIMELIMIT = 0.95
-EPS = 0.001
 ALPHA = 0.01
-GAMMA = 0.9
+GAMMA = 0.85
 
 def listFunc(l1, l2):
         o = -1
@@ -82,19 +81,15 @@ class myAgent():
             return best_action
 
         best_Q = -999
-
-        if random.uniform(0, 1) < 1 - EPS:
-            for action in actions:
-                if time.time() - start_time > TIMELIMIT:
-                    print("time out!!!")
-                    break
-                Q_value = self.getQValue(deepcopy(currentState), action)
-                if Q_value > best_Q:
-                    best_Q = Q_value
-                    best_action = action
-        else:
-            Q_value = self.getQValue(deepcopy(currentState), best_action)
-            best_Q = Q_value
+        for action in actions:
+            if time.time() - start_time > TIMELIMIT:
+                print("time out!!!")
+                break
+            Q_value = self.getQValue(deepcopy(currentState), action)
+            if Q_value > best_Q:
+                best_Q = Q_value
+                best_action = action
+        
         features = self.getFeatures(deepcopy(currentState), best_action)
 
         next_state = deepcopy(currentState)
@@ -113,7 +108,7 @@ class myAgent():
             self.weight[i] = self.weight[i] + ALPHA * (reward + GAMMA * best_next_Q - best_Q) * features[i]
         with open("agents/t_045/weight_train.json", 'w', encoding='utf-8') as f:
             json.dump({'weight': self.weight}, f)
-        print(self.weight)
+        # print(self.weight)
 
         # print(time.time() - start_time)
         return best_action
