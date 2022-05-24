@@ -29,8 +29,8 @@ class myAgent(Agent):
         state = self.game_rule.generateSuccessor(state, action, self.id)
         return state.agents[self.id].score - score
 
-    def Q_function(self, reward, power, para=LAMBDA):
-        return reward * (para ** power)
+    def Q_function(self, score, power, para=LAMBDA):
+        return score * (para ** power)
 
     def GetBoard(self, state):
         board = state.board
@@ -54,7 +54,7 @@ class myAgent(Agent):
         while time.time() - start_time < THINKTIME:
 
             mct_action = None
-            reward = 0
+            score = 0
 
             # expand node
             expand_state = deepcopy(game_state)
@@ -73,8 +73,8 @@ class myAgent(Agent):
                 if time.time() - start_time >= THINKTIME:
                     return random_action
 
-                # once find reward, need to escape expansion and simulation
-                if reward:
+                # once find score, need to escape expansion and simulation
+                if score:
                     break
 
                 # multi arm bandit greedy method
@@ -88,7 +88,7 @@ class myAgent(Agent):
                     mct_action = select_action
                 queue_action.append(select_action)
                 next_state = deepcopy(expand_state)
-                reward = self.DoAction(next_state, select_action)
+                score = self.DoAction(next_state, select_action)
                 current_board = self.GetBoard(next_state)
                 queue_board.append(current_board)
                 current_actions = self.GetActions(next_state)
@@ -102,17 +102,17 @@ class myAgent(Agent):
                 if time.time() - start_time >= THINKTIME:
                     return random_action
 
-                if reward:
+                if score:
                     break
                 simulate_action = random.choice(current_actions)
                 next_state = deepcopy(simulate_state)
-                reward = self.DoAction(next_state, simulate_action)
+                score = self.DoAction(next_state, simulate_action)
                 current_actions = self.GetActions(next_state)
                 simulate_state = next_state
                 depth += 1
 
             # get Q-value
-            value = self.Q_function(reward, depth)
+            value = self.Q_function(score, depth)
             queue_action.append('token')    # make sure two queues are same length
 
             # backpropagation

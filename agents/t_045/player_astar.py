@@ -133,8 +133,8 @@ class myAgent(Agent):
                     next_state = deepcopy(state)
                     next_path = path + [a]
                     next_cost = cost + 1
-                    reward = self.DoAction(next_state, a)
-                    if reward:
+                    score = self.DoAction(next_state, a)
+                    if score:
                         print(f'Move {len(next_path)}, path found:', next_path)
                         return next_path[0]
                     else:
