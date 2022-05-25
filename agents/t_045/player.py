@@ -4,10 +4,8 @@ sys.path.append('agents/t_045/')
 import json
 
 from copy import deepcopy
-from template import Agent
 from Yinsh.yinsh_model import YinshGameRule
-from Yinsh.yinsh_utils import ILLEGAL_POS
-import random, time, heapq
+import random, time
 import numpy as np
 
 TIMELIMIT = 0.95
@@ -27,11 +25,9 @@ class myAgent():
 
         self.weight = [1, 0.1, 0.1, 0.2, 0.1, 0.2, 0.1, 0.1]
         self.round = 0
-        # with open("agents/t_045/weight.json", 'r', encoding='utf-8') as fw:
-        #     self.weight = json.load(fw)['weight']
-        # print(self.weight)
-        with open("agents/t_045/heuristic_chart.json", 'r', encoding='utf-8') as fw:
-            self.hValue = json.load(fw)
+        with open("agents/t_045/weight_train.json", 'r', encoding='utf-8') as fw:
+            self.weight = json.load(fw)['weight']
+                # print(self.weight)
         self.RING_BOARD = [[-1, -1, -1, -1, -1, -1, 4, 4, 4, 4, -1],
                       [-1, -1, -1, -1, 4, 5, 5, 5, 5, 5, 4],
                       [-1, -1, -1, 4, 5, 6, 6, 6, 6, 5, 4],
@@ -119,13 +115,13 @@ class myAgent():
 
         next_state = deepcopy(state)
 
-        # feature1
+        # feature1 If the agent will get a score in the next step
         score = self.DoAction(next_state, action)
         if score > 1:
             print("score is greater than 1: " + str(score))
         features.append(score)
 
-        # feature2
+        # feature2 Self-counters left on board if such action taken compared with counters left before action taken
         next_board = "".join(map(str, next_state.board))
         next_self_counter = next_board.count(str(self_counter))
         next_self_score = next_state.agents[self.id].score
@@ -134,7 +130,7 @@ class myAgent():
         else:
             features.append((next_self_counter - current_self_counter)/51)
 
-        # feature3
+        # feature3 Opponent’s counters left on board if such action taken compared with counters left before action taken
         next_oppo_counter = next_board.count(str(opponent_counter))
         next_oppo_score = next_state.agents[1-self.id].score
         if next_oppo_score - current_oppo_score:
@@ -142,10 +138,10 @@ class myAgent():
         else:
             features.append(-(next_oppo_counter - current_oppo_counter)/51)
 
-        # feature4
+        # feature4 The inverse of heuristic value of next action
         features.append(self.getStepScore(next_state.board))
 
-        # feature5 棋盘中我方环周围的对方环数量
+        # feature5 The number of opponent's rings around our rings on the board
         features.append(self.getComponentsAround(next_state, 2 * (1 - self.id) + 1) / 6)
 
         # feature6 danger combines
@@ -155,20 +151,6 @@ class myAgent():
         else:
             danger_feature = 0
         features.append(danger_feature)
-
-        #feature how many positions are colinear with self rings
-        # colinearPos = set()
-        # for r in self.getSelfRingsPos(next_state.board):
-        #     for i in range(11):
-        #         if (r[0],i) not in ILLEGAL_POS and i != r[1]:
-        #             colinearPos.add((r[0],i))
-        #         if (i,r[1]) not in ILLEGAL_POS and i != r[0]:
-        #             colinearPos.add((i,r[1]))
-        #         if i != 0 and r[0] - i >= 0 and r[0] + i <= 10 and (r[0]-i,r[1]+i) not in ILLEGAL_POS:
-        #             colinearPos.add((r[0]-i,r[1]+i))
-        #         if i != 0 and r[0] + i <= 10 and r[0] - i >= 0 and (r[0]+i,r[1]-i) not in ILLEGAL_POS:
-        #             colinearPos.add((r[0]+i,r[1]-i))
-        # features.append(len(colinearPos)/51)
 
         # feature7 how many legal ring moves for oppo
         legalMoveNum = 0

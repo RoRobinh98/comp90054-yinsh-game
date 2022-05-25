@@ -20,11 +20,6 @@ class myAgent():
 
         self.weight = [1, 0.1, 0.1, 0.2, 0.1, 0.2]
         self.round = 0
-        # with open("agents/t_045/weight_RL.json", 'r', encoding='utf-8') as fw:
-        #     self.weight = json.load(fw)['weight']
-        # print(self.weight)
-        with open("agents/t_045/heuristic_chart.json", 'r', encoding='utf-8') as fw:
-            self.hValue = json.load(fw)
         self.RING_BOARD = [[-1, -1, -1, -1, -1, -1, 4, 4, 4, 4, -1],
                            [-1, -1, -1, -1, 4, 5, 5, 5, 5, 5, 4],
                            [-1, -1, -1, 4, 5, 6, 6, 6, 6, 5, 4],

@@ -32,8 +32,6 @@ class myAgent():
         with open("agents/t_045/weight_train.json", 'r', encoding='utf-8') as fw:
             self.weight = json.load(fw)['weight']
         # print(self.weight)
-        with open("agents/t_045/heuristic_chart.json", 'r', encoding='utf-8') as fw:
-            self.hValue = json.load(fw)
         self.RING_BOARD = [[-1, -1, -1, -1, -1, -1, 4, 4, 4, 4, -1],
                       [-1, -1, -1, -1, 4, 5, 5, 5, 5, 5, 4],
                       [-1, -1, -1, 4, 5, 6, 6, 6, 6, 5, 4],
@@ -167,7 +165,7 @@ class myAgent():
         # feature4
         features.append(self.getStepScore(next_state.board))
 
-        # feature5 棋盘中我方环周围的对方环数量
+        # feature5
         features.append(self.getComponentsAround(next_state, 2 * (1 - self.id) + 1) / 6)
 
         # feature6 danger combines
@@ -177,20 +175,6 @@ class myAgent():
         else:
             danger_feature = 0
         features.append(danger_feature)
-
-        #feature how many positions are colinear with self rings
-        # colinearPos = set()
-        # for r in self.getSelfRingsPos(next_state.board):
-        #     for i in range(11):
-        #         if (r[0],i) not in ILLEGAL_POS and i != r[1]:
-        #             colinearPos.add((r[0],i))
-        #         if (i,r[1]) not in ILLEGAL_POS and i != r[0]:
-        #             colinearPos.add((i,r[1]))
-        #         if i != 0 and r[0] - i >= 0 and r[0] + i <= 10 and (r[0]-i,r[1]+i) not in ILLEGAL_POS:
-        #             colinearPos.add((r[0]-i,r[1]+i))
-        #         if i != 0 and r[0] + i <= 10 and r[0] - i >= 0 and (r[0]+i,r[1]-i) not in ILLEGAL_POS:
-        #             colinearPos.add((r[0]+i,r[1]-i))
-        # features.append(len(colinearPos)/51)
 
         # feature7 how many legal ring moves for oppo
         legalMoveNum = 0
